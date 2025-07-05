@@ -4,3 +4,4 @@ joblib
 plotly
 pandas
 meteostat
+scikit-learn
