@@ -14,9 +14,9 @@ SkyCast is a sleek and interactive web app that gives **real-time weather update
   - 5-day forecast
   - Tomorrow's prediction
   - Historical average trends
-- 🌙 Dark Mode toggle (with local storage)
-- 🔍 Clean UI with emoji branding and mobile responsiveness
-- 📉 Visibility classification (Clear, Hazy, Foggy)
+- 🌙 Dark Mode toggle
+- 🔍 Clean UI with emoji branding
+- 📉 Visibility classification (Clear, Hazy, Foggy, Misty)
 
 ---
 
