@@ -43,11 +43,10 @@ SkyCast is a sleek and interactive web app that gives **real-time weather update
 ---
 
 ## 📷 Screenshots
+<img width="1440" alt="Screenshot 2025-07-05 at 20 27 39" src="https://github.com/user-attachments/assets/b1d76f50-c4fb-4afd-89f8-26078897afe6" />
+<img width="1440" alt="Screenshot 2025-07-05 at 20 28 10" src="https://github.com/user-attachments/assets/0f115d51-be3e-480d-9234-4a6e36c3126e" />
 
-> You can replace these links after uploading your images in `static/`
 
-![Homepage](static/screenshot.png)
-![Dark Mode](static/darkmode.png)
 
 ---
 
