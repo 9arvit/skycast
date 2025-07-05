@@ -20,7 +20,7 @@ def classify_visibility(meters):
     elif 4000 <= meters < 10000:
         return "Hazy"
     elif 1000 <= meters < 4000:
-        return "Mist"
+        return "Misty"
     else:
         return "Foggy"
 
@@ -30,7 +30,6 @@ def get_weekday_averages(city):
         geo_resp = requests.get(geo_url).json()
 
         if not geo_resp:
-            print(f"No geocode result for city: {city}")
             return {i: 0 for i in range(7)}
 
         lat = geo_resp[0]["lat"]
@@ -40,17 +39,13 @@ def get_weekday_averages(city):
         nearby = stations.nearby(lat, lon).fetch(1)
 
         if nearby.empty:
-            print(f"No station found near {city}")
             return {i: 0 for i in range(7)}
 
         station_id = nearby.index[0]
-
         start = datetime(datetime.now().year - 10, 1, 1)
         end = datetime(datetime.now().year, 1, 1)
 
-        data = Daily(station_id, start, end)
-        df = data.fetch()
-
+        df = Daily(station_id, start, end).fetch()
         df = df[df["tavg"].notnull()]
         df["weekday"] = df.index.weekday
         weekday_averages = df.groupby("weekday")["tavg"].mean().to_dict()
@@ -61,9 +56,28 @@ def get_weekday_averages(city):
 
         return weekday_averages
 
-    except Exception as e:
-        print("Error fetching Meteostat data:", e)
+    except Exception:
         return {i: 0 for i in range(7)}
+
+def get_aqi(lat, lon):
+    try:
+        url = f"http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={lon}&appid={API_KEY}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            aqi = data["list"][0]["main"]["aqi"]
+            # AQI Legend
+            legend = {
+                1: "Good 🌱",
+                2: "Fair 🌤️",
+                3: "Moderate 😐",
+                4: "Poor 😷",
+                5: "Very Poor ☠️"
+            }
+            return legend.get(aqi, "Unknown")
+        return "Unavailable"
+    except:
+        return "Unavailable"
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -76,13 +90,16 @@ def index():
         city = request.form["city"]
         weather_url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
         forecast_url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={API_KEY}&units=metric"
+        geo_url = f"http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=1&appid={API_KEY}"
 
         weather_resp = requests.get(weather_url)
         forecast_resp = requests.get(forecast_url)
+        geo_resp = requests.get(geo_url).json()
 
-        if weather_resp.status_code == 200 and forecast_resp.status_code == 200:
+        if weather_resp.status_code == 200 and forecast_resp.status_code == 200 and geo_resp:
             data = weather_resp.json()
             forecast_data = forecast_resp.json()["list"]
+            lat, lon = geo_resp[0]["lat"], geo_resp[0]["lon"]
 
             temp = data["main"]["temp"]
             description = data["weather"][0]["description"].title()
@@ -100,6 +117,7 @@ def index():
             visibility_label = classify_visibility(visibility_m)
             tomorrow_temp = model.predict([[temp]])[0]
             weekday_averages = get_weekday_averages(city)
+            aqi = get_aqi(lat, lon)
 
             daily_forecast = defaultdict(list)
             for entry in forecast_data:
@@ -160,7 +178,8 @@ def index():
             summary = (
                 f"The weather in {city.title()} is currently {description.lower()} "
                 f"with a temperature of {temp}°C (feels like {feels_like}°C). "
-                f"Humidity is {humidity}%, wind speed is {wind_speed} m/s, and visibility is {visibility_label.lower()}."
+                f"Humidity is {humidity}%, wind speed is {wind_speed} m/s, visibility is {visibility_label.lower()}, "
+                f"and air quality is {aqi.lower()}."
             )
 
             weather = {
@@ -175,7 +194,8 @@ def index():
                 "visibility": visibility_label,
                 "clouds": clouds,
                 "rain": rain,
-                "snow": snow
+                "snow": snow,
+                "aqi": aqi
             }
             prediction = round(tomorrow_temp, 2)
 
@@ -187,4 +207,3 @@ def index():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
-
