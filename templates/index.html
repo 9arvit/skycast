@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SkyCast - Weather Forecast</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌦️</text></svg>">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #e0f7fa;
+      --fg: #ffffff;
+      --text: #333;
+      --accent: #00796b;
+    }
+
+    body.dark {
+      --bg: #121212;
+      --fg: #1e1e1e;
+      --text: #eee;
+      --accent: #00c2b2;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      margin: 0;
+      padding: 0;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(-10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      margin-top: 40px;
+      font-size: 2.5rem;
+      color: var(--accent);
+      transition: transform 0.3s ease;
+    }
+
+    h1:hover {
+      transform: scale(1.03);
+    }
+
+    .toggle-dark {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      font-size: 1.2rem;
+      background: var(--fg);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      border-radius: 20px;
+      padding: 5px 12px;
+      cursor: pointer;
+    }
+
+    form {
+      margin: 20px 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    input[type="text"], button {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #bbb;
+    }
+
+    input[type="text"] {
+      width: 250px;
+      transition: box-shadow 0.3s ease;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 6px rgba(0, 121, 107, 0.4);
+    }
+
+    button {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #004d40;
+    }
+
+    .weather-box {
+      background: var(--fg);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+      max-width: 900px;
+      width: 95%;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .cards-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .card {
+      background-color: #f9f9f9;
+      padding: 12px 16px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      font-size: 15px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.3s ease;
+    }
+
+    body.dark .card {
+      background-color: #2a2a2a;
+    }
+
+    .card:hover {
+      transform: scale(1.03);
+    }
+
+    .card i {
+      color: var(--accent);
+      font-size: 18px;
+    }
+
+    .summary-box {
+      margin-top: 25px;
+      background: #f3f3f3;
+      border-left: 6px solid var(--accent);
+      padding: 15px 20px;
+      border-radius: 8px;
+      text-align: left;
+    }
+
+    body.dark .summary-box {
+      background: #222;
+    }
+
+    #plotly-chart {
+      margin-top: 30px;
+    }
+
+    .prediction-text {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 2rem; }
+      input[type="text"] { width: 180px; }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="toggle-dark" onclick="toggleDarkMode()">🌙 Dark Mode</button>
+
+  <h1>🌦️ SkyCast</h1>
+
+  <form method="POST">
+    <input type="text" name="city" placeholder="Enter city (e.g., London)" required>
+    <button type="submit">Get Weather</button>
+  </form>
+
+  {% if weather %}
+    <div class="weather-box">
+      {% if weather.error %}
+        <p>{{ weather.error }}</p>
+      {% else %}
+        <h2>{{ weather.city | title }}</h2>
+        <p><strong>Today:</strong> {{ weather.temperature }}°C, {{ weather.description }}</p>
+        <img src="http://openweathermap.org/img/wn/{{ weather.icon }}@2x.png" alt="icon">
+
+        <div class="cards-container">
+          <div class="card"><i class="fas fa-thermometer-half"></i> Feels Like: {{ weather.feels_like }}°C</div>
+          <div class="card"><i class="fas fa-tint"></i> Humidity: {{ weather.humidity }}%</div>
+          <div class="card"><i class="fas fa-tachometer-alt"></i> Pressure: {{ weather.pressure }} hPa</div>
+          <div class="card"><i class="fas fa-wind"></i> Wind: {{ weather.wind_speed }} m/s</div>
+          <div class="card"><i class="fas fa-eye"></i> Visibility: {{ weather.visibility }}</div>
+          <div class="card"><i class="fas fa-cloud"></i> Cloud Coverage: {{ weather.clouds }}%</div>
+          {% if weather.rain and weather.rain > 0 %}
+            <div class="card"><i class="fas fa-cloud-showers-heavy"></i> Rain (1h): {{ weather.rain }} mm</div>
+          {% endif %}
+          {% if weather.snow and weather.snow > 0 %}
+            <div class="card"><i class="fas fa-snowflake"></i> Snow (1h): {{ weather.snow }} mm</div>
+          {% endif %}
+        </div>
+
+        {% if prediction %}
+          <div class="prediction-text">
+            <strong>Tomorrow's Predicted Temperature:</strong> {{ prediction }}°C
+          </div>
+          <div id="plotly-chart"></div>
+          <script>
+            var chart = {{ chartJSON | safe }};
+            Plotly.newPlot('plotly-chart', chart.data, chart.layout, {responsive: true});
+          </script>
+        {% endif %}
+
+        {% if summary %}
+          <div class="summary-box">
+            <strong>🧠 AI Weather Summary:</strong>
+            <p>{{ summary }}</p>
+          </div>
+        {% endif %}
+
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <script>
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark');
+    }
+  </script>
+
+</body>
+</html>
