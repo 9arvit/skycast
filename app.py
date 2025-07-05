@@ -8,6 +8,7 @@ from datetime import datetime
 from collections import defaultdict
 from meteostat import Stations, Daily
 import pandas as pd
+import os
 
 app = Flask(__name__)
 API_KEY = "e6984aef959d817858ac45743b40f4a0"
@@ -184,4 +185,6 @@ def index():
     return render_template("index.html", weather=weather, prediction=prediction, chartJSON=chartJSON, summary=summary)
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=10000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
+
